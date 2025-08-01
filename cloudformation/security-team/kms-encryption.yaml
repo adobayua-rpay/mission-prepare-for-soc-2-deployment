@@ -1,0 +1,67 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Panaptico Mission (8622b40b): Creates a customer-managed KMS key with rotation for SOC 2.'
+
+Parameters:
+  KeyAdministratorArn:
+    Type: String
+    Description: 'ARN of the IAM user/role to administer this key.'
+
+Metadata:
+  Panaptico:
+    MissionID: '8622b40b'
+    Team: 'Security'
+    Stage: 'Foundation'
+
+Resources:
+  Soc2ComplianceKey:
+    Type: 'AWS::KMS::Key'
+    Properties:
+      Description: 'KMS key for SOC 2 compliant data encryption'
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: 'Enable IAM User Permissions'
+            Effect: Allow
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+            Action: 'kms:*'
+            Resource: '*'
+          - Sid: 'Allow administration of the key'
+            Effect: Allow
+            Principal:
+              AWS: !Ref KeyAdministratorArn
+            Action:
+              - 'kms:Create*'
+              - 'kms:Describe*'
+              - 'kms:Enable*'
+              - 'kms:List*'
+              - 'kms:Put*'
+              - 'kms:Update*'
+              - 'kms:Revoke*'
+              - 'kms:Disable*'
+              - 'kms:Get*'
+              - 'kms:Delete*'
+              - 'kms:TagResource'
+              - 'kms:UntagResource'
+              - 'kms:ScheduleKeyDeletion'
+              - 'kms:CancelKeyDeletion'
+            Resource: '*'
+
+  Soc2KeyAlias:
+    Type: 'AWS::KMS::Alias'
+    Properties:
+      AliasName: 'alias/soc2-compliance-key'
+      TargetKeyId: !Ref Soc2ComplianceKey
+
+Outputs:
+  KeyId:
+    Description: 'KMS Key ID'
+    Value: !Ref Soc2ComplianceKey
+    Export:
+      Name: !Sub '${AWS::StackName}-KeyId'
+  KeyArn:
+    Description: 'KMS Key ARN'
+    Value: !GetAtt Soc2ComplianceKey.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-KeyArn'
