@@ -1,0 +1,47 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Panaptico Mission (8622b40b): Creates least-privilege IAM roles for SOC 2.'
+
+Metadata:
+  Panaptico:
+    MissionID: '8622b40b'
+    Team: 'Security'
+    Stage: 'Foundation'
+
+Resources:
+  EC2InstanceRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: 'soc2-ec2-instance-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: 'ec2.amazonaws.com'
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore'
+      Policies:
+        - PolicyName: 'S3-Read-Only-Access'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 's3:GetObject'
+                  - 's3:ListBucket'
+                Resource: '*'
+
+  EC2InstanceProfile:
+    Type: 'AWS::IAM::InstanceProfile'
+    Properties:
+      InstanceProfileName: 'soc2-ec2-instance-profile'
+      Roles:
+        - !Ref EC2InstanceRole
+
+Outputs:
+  EC2InstanceProfileArn:
+    Description: 'ARN for the EC2 Instance Profile'
+    Value: !GetAtt EC2InstanceProfile.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-EC2InstanceProfileArn'
